@@ -74,8 +74,15 @@ async function fetchJobs() {
 
     if (!title || !url) return;
     // "মোট পদ" লেবেল না থাকলে এটা জব-পোস্ট না (হতে পারে অন্য কোনো ব্লক)
-    const fullText = normalizeText($el.text());
+    let fullText = normalizeText($el.text());
     if (!fullText.includes("মোট পদ")) return;
+
+    // "বিস্তারিত পড়ুন", "Categories" ইত্যাদি — এগুলোর পর থেকে সব বাদ দেওয়া হচ্ছে,
+    // নাহলে শেষ ফিল্ড (শেষ আবেদন) এর সাথে এই জাঙ্ক টেক্সট জুড়ে যায়
+    fullText = fullText
+      .split(/বিস্তারিত পড়ুন/u)[0]
+      .split(/\bCategories\b/u)[0]
+      .trim();
 
     const job = {
       title,
