@@ -1,10 +1,12 @@
-// bdgovt.info থেকে নতুন চাকরির বিজ্ঞপ্তি স্ক্র্যাপ করে Telegram ও WhatsApp এ পাঠায়
-// প্রতি ৪ ঘন্টায় একবার GitHub Actions cron দিয়ে চলে (দেখুন .github/workflows/scrape.yml)
+// bdgovt.info থেকে নতুন চাকরির বিজ্ঞপ্তি স্ক্র্যাপ করে Gemini API দিয়ে ছবি বানিয়ে Telegram এ পাঠায়
+// প্রতি ৪ ঘন্টায় একবার GitHub Actions cron দিয়ে চলে
 
 const axios = require("axios");
 const cheerio = require("cheerio");
 const fs = require("fs");
 const path = require("path");
+const FormData = require("form-data");
+const { GoogleGenAI } = require("@google/genai");
 
 const SITE_URL = "https://bdgovt.info/";
 const SENT_FILE = path.join(__dirname, "sent.json");
@@ -32,7 +34,6 @@ function normalizeText(t) {
   return t.replace(/\s+/g, " ").trim();
 }
 
-// text এর মধ্যে labelName এর পরের মান বের করে, পরবর্তী লেবেলের আগ পর্যন্ত
 function extractField(text, label, allLabels) {
   const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const others = allLabels.filter((l) => l !== label).map(escape);
@@ -45,9 +46,39 @@ function extractField(text, label, allLabels) {
 }
 
 function extractPublishedDate(text) {
-  // "July 25, 2026" প্যাটার্ন খোঁজে
   const m = text.match(/[A-Z][a-z]+ \d{1,2},\s*\d{4}/);
   return m ? m[0] : "তথ্য নেই";
+}
+
+// ---------- ইংরেজি থেকে বাংলায় কনভার্ট করার ইউটিলিটি ----------
+
+function convertToBanglaDigitsAndMonths(text) {
+  if (!text) return text;
+
+  const digits = {
+    '0': '০', '1': '১', '2': '২', '3': '৩', '4': '৪',
+    '5': '৫', '6': '৬', '7': '৭', '8': '৮', '9': '৯'
+  };
+
+  const months = {
+    'January': 'জানুয়ারি', 'February': 'ফেব্রুয়ারি', 'March': 'মার্চ',
+    'April': 'এপ্রিল', 'May': 'মে', 'June': 'জুন',
+    'July': 'জুলাই', 'August': 'আগস্ট', 'September': 'সেপ্টেম্বর',
+    'October': 'অক্টোবর', 'November': 'নভেম্বর', 'December': 'ডিসেম্বর'
+  };
+
+  let str = text;
+  
+  // মাস রূপান্তর
+  Object.keys(months).forEach(enMonth => {
+    const reg = new RegExp(enMonth, 'gi');
+    str = str.replace(reg, months[enMonth]);
+  });
+
+  // সংখ্যা রূপান্তর
+  str = str.replace(/[0-9]/g, w => digits[w]);
+
+  return str;
 }
 
 // ---------- স্ক্র্যাপিং ----------
@@ -65,7 +96,6 @@ async function fetchJobs() {
   const $ = cheerio.load(html);
   const jobs = [];
 
-  // WordPress এর সাধারণ post loop <article> ট্যাগে থাকে
   $("article").each((_, el) => {
     const $el = $(el);
     const titleLink = $el.find("h2 a, h1 a").first();
@@ -73,12 +103,9 @@ async function fetchJobs() {
     const url = titleLink.attr("href");
 
     if (!title || !url) return;
-    // "মোট পদ" লেবেল না থাকলে এটা জব-পোস্ট না (হতে পারে অন্য কোনো ব্লক)
     let fullText = normalizeText($el.text());
     if (!fullText.includes("মোট পদ")) return;
 
-    // "বিস্তারিত পড়ুন", "Categories" ইত্যাদি — এগুলোর পর থেকে সব বাদ দেওয়া হচ্ছে,
-    // নাহলে শেষ ফিল্ড (শেষ আবেদন) এর সাথে এই জাঙ্ক টেক্সট জুড়ে যায়
     fullText = fullText
       .split(/বিস্তারিত পড়ুন/u)[0]
       .split(/\bCategories\b/u)[0]
@@ -91,7 +118,7 @@ async function fetchJobs() {
       totalPost: extractField(fullText, "মোট পদ", LABELS),
       qualification: extractField(fullText, "যোগ্যতা", LABELS),
       ageLimit: extractField(fullText, "বয়সসীমা", LABELS),
-      salary: extractField(fullText, "বেতন", LABELS), // গ্রেড উল্লেখ থাকলে এখানেই থাকবে
+      salary: extractField(fullText, "বেতন", LABELS),
       deadline: extractField(fullText, "শেষ আবেদন", LABELS),
     };
     jobs.push(job);
@@ -100,9 +127,139 @@ async function fetchJobs() {
   return jobs;
 }
 
-// ---------- মেসেজ ফরম্যাট ----------
+// ---------- Gemini API দিয়ে ছবি তৈরি ----------
 
-function formatMessage(job) {
+async function generateJobImage(job) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error("GEMINI_API_KEY পাওয়া যায়নি!");
+    return null;
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+
+  // ডাটা বাংলায় প্রস্তুত করা
+  const titleBn = convertToBanglaDigitsAndMonths(job.title);
+  const totalPostBn = convertToBanglaDigitsAndMonths(job.totalPost);
+  const qualificationBn = convertToBanglaDigitsAndMonths(job.qualification);
+  const ageLimitBn = convertToBanglaDigitsAndMonths(job.ageLimit);
+  const salaryBn = convertToBanglaDigitsAndMonths(job.salary);
+  const publishedBn = convertToBanglaDigitsAndMonths(job.published);
+  const deadlineBn = convertToBanglaDigitsAndMonths(job.deadline);
+
+  const prompt = `Create a clean, modern, professional square (1:1) Bengali job circular poster for Facebook and social media.
+
+Style Requirements:
+- Minimalist design.
+- Use ONLY 2–3 colors (for example: dark green + white + black, or navy blue + white + dark gray).
+- White or very light background.
+- No gradients, no fancy effects, no decorative elements.
+- No logos, no stock photos, no illustrations.
+- High contrast and easy to read.
+- Clean typography with proper Bengali Unicode fonts.
+- Keep generous spacing and alignment.
+- Suitable for social media promotion by a computer & online service center.
+
+Layout:
+
+1. Large bold title at the top
+Use only the Bengali organization name followed by:
+"নিয়োগ বিজ্ঞপ্তি"
+Example:
+"${titleBn} নিয়োগ বিজ্ঞপ্তি"
+
+Do NOT write:
+"নিয়োগ বিজ্ঞপ্তি" separately above the title.
+Do NOT include any logo.
+
+2. A thin horizontal divider.
+
+3. Information section with simple monochrome icons on the left.
+
+Each line should contain:
+
+🗂️ মোট পদ/ক্যাটাগরি: ${totalPostBn}
+🎓 শিক্ষাগত যোগ্যতা: ${qualificationBn}
+🎂 বয়সসীমা: ${ageLimitBn}
+💰 বেতন গ্রেড: ${salaryBn}
+📅 বিজ্ঞপ্তি প্রকাশ: ${publishedBn}
+⏰ আবেদনের শেষ তারিখ: ${deadlineBn}
+
+Icons should be simple, flat, and consistent.
+
+4. Bottom Contact Section
+
+A bordered box with a slightly darker background.
+
+Top line inside the box:
+
+"যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন"
+
+Below that display prominently:
+
+এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস
+
+Then:
+
+📍 বাংলাবাজার রোড, বরিশাল।
+
+Then a large, highly visible phone number:
+
+📞 01533199800
+
+The phone number must be one of the most noticeable elements in the poster with WhatsApp, telegram and call logo.
+
+Typography Rules:
+- Process slowly copy the Bengali Text exactly as it is from prompt
+- All body text must be in Bengali.
+- Convert all English dates and numbers into Bengali.
+- Use Bengali numerals (০১২৩৪৫৬৭৮৯).
+- Never leave English month names like July or August.
+- Keep punctuation clean.
+- Maintain perfect spelling and formatting.
+- Make the title significantly larger than the rest.
+- Ensure every line is aligned and evenly spaced.
+
+Output Requirements:
+- Square aspect ratio (1:1).
+- High resolution (minimum 2000×2000 pixels).
+- Print-ready quality.
+- Crisp text with no spelling mistakes.
+- Do not omit or invent any information.
+- Follow the supplied information exactly.`;
+
+  try {
+    console.log("Gemini/Imagen দিয়ে ছবি জেনারেট করা হচ্ছে...");
+    const response = await ai.models.generateImages({
+      model: "imagen-3.0-generate-002",
+      prompt: prompt,
+      config: {
+        numberOfImages: 1,
+        outputMimeType: "image/jpeg",
+        aspectRatio: "1:1",
+      },
+    });
+
+    if (response.generatedImages && response.generatedImages.length > 0) {
+      const base64ImageBytes = response.generatedImages[0].image.imageBytes;
+      const buffer = Buffer.from(base64ImageBytes, "base64");
+      const imagePath = path.join(__dirname, "temp_job_banner.jpg");
+      fs.writeFileSync(imagePath, buffer);
+      console.log("ছবি সফলভাবে জেনারেট ও সেভ হয়েছে ✅");
+      return imagePath;
+    } else {
+      console.error("Gemini থেকে কোনো ছবি পাওয়া যায়নি।");
+      return null;
+    }
+  } catch (error) {
+    console.error("Gemini Image Generation এ সমস্যা:", error.message || error);
+    return null;
+  }
+}
+
+// ---------- টেলিগ্রাম ক্যাপশন ফরম্যাট ----------
+
+function formatCaption(job) {
   return [
     `📢 *${job.title}*`,
     ``,
@@ -113,60 +270,44 @@ function formatMessage(job) {
     `📅 বিজ্ঞপ্তি প্রকাশ: ${job.published}`,
     `⏰ আবেদনের শেষ তারিখ: ${job.deadline}`,
     ``,
-    `বিস্তারিত জানতে ও অনলাইনে আবেদন করতে যোগাযোগ করুন:`,
+    `🔗 মূল লিংক: ${job.url}`,
     ``,
-    `এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস`,
-    `বাংলাবাজার রোড, বরিশাল।`,
+    `বিস্তারিত জানতে ও অনলাইনে আবেদন করতে যোগাযোগ করুন:`,
+    `🏢 *এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস*`,
+    `📍 বাংলাবাজার রোড, বরিশাল।`,
     `📱 01533199800`,
   ].join("\n");
 }
 
-// ---------- Telegram ----------
+// ---------- Telegram (sendPhoto API) ----------
 
-async function sendTelegram(text) {
+async function sendTelegramPhoto(imagePath, caption) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) {
-    console.log("Telegram env var নেই, Telegram স্কিপ করা হলো");
+    console.log("Telegram env var নেই, স্কিপ করা হলো");
     return;
   }
-  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+
+  const url = `https://api.telegram.org/bot${token}/sendPhoto`;
+
   try {
-    await axios.post(url, {
-      chat_id: chatId,
-      text,
-      parse_mode: "Markdown",
-      disable_web_page_preview: false,
+    const formData = new FormData();
+    formData.append("chat_id", chatId);
+    formData.append("photo", fs.createReadStream(imagePath));
+    formData.append("caption", caption);
+    formData.append("parse_mode", "Markdown");
+
+    await axios.post(url, formData, {
+      headers: formData.getHeaders(),
     });
-    console.log("Telegram এ পাঠানো হলো ✅");
+    console.log("Telegram এ ছবিসহ বার্তা পাঠানো হলো ✅");
   } catch (e) {
-    console.error("Telegram পাঠাতে সমস্যা:", e.response?.data || e.message);
+    console.error("Telegram এ ছবি পাঠাতে সমস্যা:", e.response?.data || e.message);
   }
 }
 
-// ---------- WhatsApp (CallMeBot ফ্রি API) ----------
-
-async function sendWhatsApp(text) {
-  const phone = process.env.CALLMEBOT_PHONE; // যেমন: 8801XXXXXXXXX
-  const apikey = process.env.CALLMEBOT_APIKEY;
-  if (!phone || !apikey) {
-    console.log("WhatsApp env var নেই, WhatsApp স্কিপ করা হলো");
-    return;
-  }
-  // CallMeBot এ মার্কডাউন সাইন (* _) সাপোর্ট করে না বললেই চলে, প্লেইন টেক্সট রাখা ভালো
-  const plain = text.replace(/\*/g, "");
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(
-    phone
-  )}&text=${encodeURIComponent(plain)}&apikey=${encodeURIComponent(apikey)}`;
-  try {
-    await axios.get(url, { timeout: 20000 });
-    console.log("WhatsApp এ পাঠানো হলো ✅");
-  } catch (e) {
-    console.error("WhatsApp পাঠাতে সমস্যা:", e.response?.data || e.message);
-  }
-}
-
-// ---------- মেইন ----------
+// ---------- মেইন লুপ ----------
 
 async function main() {
   console.log("bdgovt.info স্ক্র্যাপ শুরু...", new Date().toISOString());
@@ -182,15 +323,23 @@ async function main() {
     return;
   }
 
-  console.log(`${newJobs.length}টি নতুন বিজ্ঞপ্তি পাঠানো হচ্ছে...`);
+  console.log(`${newJobs.length}টি নতুন বিজ্ঞপ্তি পাওয়া গেছে, প্রসেস করা হচ্ছে...`);
 
   for (const job of newJobs) {
-    const message = formatMessage(job);
-    await sendTelegram(message);
-    await sendWhatsApp(message);
+    const caption = formatCaption(job);
+    const imagePath = await generateJobImage(job);
+
+    if (imagePath && fs.existsSync(imagePath)) {
+      await sendTelegramPhoto(imagePath, caption);
+      try {
+        fs.unlinkSync(imagePath);
+      } catch (err) {}
+    } else {
+      console.log("ছবি জেনারেট না হওয়ায় বার্তা স্কিপ করা হলো।");
+    }
+
     sent.add(job.url);
-    // দুই মেসেজের মাঝে সামান্য বিরতি (rate-limit এড়াতে)
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 3000));
   }
 
   saveSentUrls(sent);
