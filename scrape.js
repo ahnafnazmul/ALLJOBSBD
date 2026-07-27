@@ -12,6 +12,31 @@ const SENT_FILE = path.join(__dirname, "sent.json");
 
 const LABELS = ["মোট পদ", "যোগ্যতা", "বয়সসীমা", "বেতন", "শেষ আবেদন"];
 
+// কালার থিম কালেকশন (ভ্যারিয়েশনের জন্য)
+const COLOR_THEMES = [
+  {
+    primary: "#0f2b48",      // Deep Navy Blue
+    accent: "#1e3a8a",
+    lightBg: "#f0fdf4",
+    footerBg: "#0f2b48",
+    footerTextColor: "#ffffff"
+  },
+  {
+    primary: "#14532d",      // Dark Green
+    accent: "#15803d",
+    lightBg: "#f0fdf4",
+    footerBg: "#14532d",
+    footerTextColor: "#ffffff"
+  },
+  {
+    primary: "#4c1d95",      // Deep Purple / Violet
+    accent: "#6d28d9",
+    lightBg: "#faf5ff",
+    footerBg: "#4c1d95",
+    footerTextColor: "#ffffff"
+  }
+];
+
 // ---------- ইউটিলিটি ----------
 
 function loadSentUrls() {
@@ -119,7 +144,7 @@ async function fetchJobs() {
   return jobs;
 }
 
-// ---------- সুন্দর এইচডি ব্যানার তৈরি (HTML -> JPG) ----------
+// ---------- নমুনা ছবির মত এইচডি ব্যানার ডিজাইন (HTML -> JPG) ----------
 
 async function generateJobImage(job) {
   const outputPath = path.join(__dirname, "temp_job_banner.jpg");
@@ -132,118 +157,200 @@ async function generateJobImage(job) {
   const publishedBn = convertToBanglaDigitsAndMonths(job.published);
   const deadlineBn = convertToBanglaDigitsAndMonths(job.deadline);
 
+  // র্যান্ডম থিম বাছাই
+  const theme = COLOR_THEMES[Math.floor(Math.random() * COLOR_THEMES.length)];
+
   const htmlContent = `
   <!DOCTYPE html>
   <html lang="bn">
   <head>
     <meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
+      * {
+        box-sizing: border-box;
+      }
       body {
         width: 800px;
         height: 800px;
         margin: 0;
-        padding: 40px;
-        box-sizing: border-box;
+        padding: 0;
         font-family: 'Hind Siliguri', sans-serif;
-        background: #ffffff;
-        color: #1a202c;
+        background: #f8fafc;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
       }
-      .header {
+      
+      /* হেডার অংশ (নমুনা ছবির মত) */
+      .header-box {
+        background-color: ${theme.primary};
+        color: #ffffff;
         text-align: center;
-        border-bottom: 3px solid #0d9488;
-        padding-bottom: 20px;
+        padding: 25px 20px;
+        border-bottom: 5px solid ${theme.accent};
       }
-      .title {
-        font-size: 32px;
-        font-weight: 700;
-        color: #0f766e;
+      .header-title {
+        font-size: 38px;
+        font-weight: 800;
         margin: 0;
-        line-height: 1.3;
+        line-height: 1.25;
+        letter-spacing: 0.5px;
       }
-      .subtitle {
-        font-size: 20px;
-        color: #475569;
-        margin-top: 8px;
-        font-weight: 600;
-      }
-      .info-grid {
-        margin: 25px 0;
+
+      /* বডি কনটেন্ট */
+      .content-body {
+        padding: 25px 35px;
+        flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        justify-content: center;
       }
-      .info-row {
+
+      .info-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .info-item {
         display: flex;
         align-items: center;
-        font-size: 20px;
-        background: #f8fafc;
-        padding: 10px 18px;
-        border-radius: 8px;
-        border-left: 5px solid #0d9488;
+        font-size: 22px;
+        color: #1e293b;
+        font-weight: 700;
       }
+
+      .info-icon {
+        font-size: 26px;
+        width: 40px;
+        text-align: center;
+        margin-right: 10px;
+      }
+
       .info-label {
+        color: #0f172a;
+        margin-right: 6px;
+      }
+
+      .info-val {
+        color: #1e293b;
+        font-weight: 600;
+      }
+
+      /* ফুটার সেকশন (নমুনা ছবির বক্সের মত) */
+      .footer-container {
+        padding: 0 30px 25px 30px;
+      }
+
+      .footer-card {
+        border: 2px solid ${theme.primary};
+        border-radius: 12px;
+        overflow: hidden;
+        background: #ffffff;
+        text-align: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      }
+
+      .footer-top-banner {
+        background-color: ${theme.primary};
+        color: #ffffff;
+        font-size: 19px;
+        font-weight: 700;
+        padding: 8px 10px;
+      }
+
+      .footer-details {
+        padding: 12px 10px 15px 10px;
+      }
+
+      .brand-title {
+        font-size: 26px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 4px;
+      }
+
+      .brand-address {
+        font-size: 20px;
         font-weight: 700;
         color: #334155;
-        min-width: 190px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
       }
-      .info-val {
-        color: #0f172a;
-        font-weight: 500;
-        flex: 1;
-      }
-      .footer {
-        background: #0f766e;
+
+      .phone-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: ${theme.primary};
         color: #ffffff;
-        padding: 20px;
-        border-radius: 12px;
-        text-align: center;
-      }
-      .footer-top {
-        font-size: 18px;
-        margin-bottom: 6px;
-      }
-      .brand-name {
-        font-size: 26px;
-        font-weight: 700;
-        color: #fef08a;
-      }
-      .address {
-        font-size: 18px;
-        margin-top: 4px;
-      }
-      .phone {
         font-size: 28px;
-        font-weight: 700;
-        margin-top: 8px;
+        font-weight: 800;
+        padding: 4px 25px;
+        border-radius: 8px;
         letter-spacing: 1px;
       }
     </style>
   </head>
   <body>
-    <div class="header">
-      <h1 class="title">${titleBn}</h1>
-      <div class="subtitle">নিয়োগ বিজ্ঞপ্তি</div>
+
+    <!-- হেডার -->
+    <div class="header-box">
+      <div class="header-title">${titleBn}</div>
     </div>
 
-    <div class="info-grid">
-      <div class="info-row"><span class="info-label">🗂️ মোট পদ/ক্যাটাগরি:</span><span class="info-val">${totalPostBn}</span></div>
-      <div class="info-row"><span class="info-label">🎓 শিক্ষাগত যোগ্যতা:</span><span class="info-val">${qualificationBn}</span></div>
-      <div class="info-row"><span class="info-label">🎂 বয়সসীমা:</span><span class="info-val">${ageLimitBn}</span></div>
-      <div class="info-row"><span class="info-label">💰 বেতন গ্রেড:</span><span class="info-val">${salaryBn}</span></div>
-      <div class="info-row"><span class="info-label">📅 বিজ্ঞপ্তি প্রকাশ:</span><span class="info-val">${publishedBn}</span></div>
-      <div class="info-row"><span class="info-label">⏰ আবেদনের শেষ তারিখ:</span><span class="info-val">${deadlineBn}</span></div>
+    <!-- তথ্যসমূহ -->
+    <div class="content-body">
+      <div class="info-list">
+        <div class="info-item">
+          <span class="info-icon">🗂️</span>
+          <span class="info-label">মোট পদ/ক্যাটাগরি:</span>
+          <span class="info-val">${totalPostBn}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">🎓</span>
+          <span class="info-label">শিক্ষাগত যোগ্যতা:</span>
+          <span class="info-val">${qualificationBn}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">🎂</span>
+          <span class="info-label">বয়সসীমা:</span>
+          <span class="info-val">${ageLimitBn}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">💰</span>
+          <span class="info-label">বেতন গ্রেড:</span>
+          <span class="info-val">${salaryBn}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">📅</span>
+          <span class="info-label">বিজ্ঞপ্তি প্রকাশ:</span>
+          <span class="info-val">${publishedBn}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">⏰</span>
+          <span class="info-label">আবেদনের শেষ তারিখ:</span>
+          <span class="info-val">${deadlineBn}</span>
+        </div>
+      </div>
     </div>
 
-    <div class="footer">
-      <div class="footer-top">যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন</div>
-      <div class="brand-name">এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস</div>
-      <div class="address">📍 বাংলাবাজার রোড, বরিশাল।</div>
-      <div class="phone">📞 01533199800</div>
+    <!-- ফুটার বক্স -->
+    <div class="footer-container">
+      <div class="footer-card">
+        <div class="footer-top-banner">যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন</div>
+        <div class="footer-details">
+          <div class="brand-title">এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস</div>
+          <div class="brand-address">📍 বাংলাবাজার রোড, বরিশাল।</div>
+          <div class="phone-pill">📞 01533199800</div>
+        </div>
+      </div>
     </div>
+
   </body>
   </html>
   `;
