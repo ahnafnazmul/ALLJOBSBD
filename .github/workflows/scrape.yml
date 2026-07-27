@@ -2,16 +2,13 @@ name: BD Govt Job Notifier
 
 on:
   schedule:
-    # প্রতি ৪ ঘন্টা পরপর (UTC সময়ে) — 00:00, 04:00, 08:00, 12:00, 16:00, 20:00
-    - cron: "0 */4 * * *"
-  workflow_dispatch: {} # ম্যানুয়ালি Run করার সুবিধার জন্য
-
-permissions:
-  contents: write # sent.json কমিট করার জন্য দরকার
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
 
 jobs:
   scrape-and-notify:
     runs-on: ubuntu-latest
+
     steps:
       - name: রিপো চেকআউট করা
         uses: actions/checkout@v4
@@ -19,22 +16,26 @@ jobs:
       - name: Node.js সেটআপ
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
 
-      - name: প্যাকেজ ইনস্টল
+      - name: Chromium ডিপেনডেন্সি ইন্সটল (Ubuntu)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgbm-dev libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libss3 libxtst6 ca-certificates fonts-liberation libnss3 lsb-release xdg-utils wget
+
+      - name: প্যাকেজ ইন্সটল
         run: npm install
 
       - name: স্ক্র্যাপ ও নোটিফাই
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: node scrape.js
 
       - name: পাঠানো পোস্টের তালিকা (sent.json) কমিট করা
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add sent.json || true
-          git diff --cached --quiet || git commit -m "chore: update sent.json [skip ci]"
-          git push || true
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add sent.json
+          git commit -m "Update sent URLs [skip ci]" || exit 0
+          git push
