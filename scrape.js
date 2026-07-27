@@ -119,7 +119,7 @@ async function fetchJobs() {
   return jobs;
 }
 
-// ---------- সুন্দর এইচডি ব্যানার ব্যানার তৈরি (HTML -> JPG) ----------
+// ---------- সুন্দর এইচডি ব্যানার তৈরি (HTML -> JPG) ----------
 
 async function generateJobImage(job) {
   const outputPath = path.join(__dirname, "temp_job_banner.jpg");
@@ -254,7 +254,18 @@ async function generateJobImage(job) {
       output: outputPath,
       html: htmlContent,
       type: 'jpeg',
-      quality: 100
+      quality: 100,
+      puppeteerArgs: {
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu'
+        ]
+      }
     });
     console.log("ব্যানার ফটো সফলভাবে তৈরি হয়েছে ✅");
     return outputPath;
@@ -277,7 +288,7 @@ function formatMessage(job) {
     `📅 *বিজ্ঞপ্তি প্রকাশ:* ${job.published}`,
     `⏰ *আবেদনের শেষ তারিখ:* ${job.deadline}`,
     ``,
-    `বিস্তারিত জানতে ও অনলাইনে আবেদন করতে যোগাযোগ করুন:`,
+    ` বিস্তারিত জানতে ও অনলাইনে আবেদন করতে যোগাযোগ করুন:`,
     ``,
     `এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস`,
     `বাংলাবাজার রোড, বরিশাল।`,
