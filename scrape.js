@@ -1,12 +1,11 @@
-// bdgovt.info থেকে নতুন চাকরির বিজ্ঞপ্তি স্ক্র্যাপ করে Gemini API দিয়ে ছবি বানিয়ে Telegram এ পাঠায়
-// প্রতি ৪ ঘন্টায় একবার GitHub Actions cron দিয়ে চলে (দেখুন .github/workflows/scrape.yml)
+// bdgovt.info থেকে নতুন চাকরির বিজ্ঞপ্তি স্ক্র্যাপ করে HD ব্যানার ইমেজ তৈরি করে Telegram এ পাঠায়
 
 const axios = require("axios");
 const cheerio = require("cheerio");
 const fs = require("fs");
 const path = require("path");
 const FormData = require("form-data");
-const { GoogleGenAI } = require("@google/genai");
+const nodeHtmlToImage = require("node-html-to-image");
 
 const SITE_URL = "https://bdgovt.info/";
 const SENT_FILE = path.join(__dirname, "sent.json");
@@ -49,8 +48,6 @@ function extractPublishedDate(text) {
   return m ? m[0] : "তথ্য নেই";
 }
 
-// ---------- ইংরেজি থেকে বাংলায় কনভার্ট করার ইউটিলিটি ----------
-
 function convertToBanglaDigitsAndMonths(text) {
   if (!text) return text;
 
@@ -67,14 +64,12 @@ function convertToBanglaDigitsAndMonths(text) {
   };
 
   let str = text;
-  
   Object.keys(months).forEach(enMonth => {
     const reg = new RegExp(enMonth, 'gi');
     str = str.replace(reg, months[enMonth]);
   });
 
   str = str.replace(/[0-9]/g, w => digits[w]);
-
   return str;
 }
 
@@ -124,16 +119,10 @@ async function fetchJobs() {
   return jobs;
 }
 
-// ---------- Gemini API দিয়ে ছবি তৈরি ----------
+// ---------- সুন্দর এইচডি ব্যানার ব্যানার তৈরি (HTML -> JPG) ----------
 
 async function generateJobImage(job) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.error("GEMINI_API_KEY পাওয়া যায়নি!");
-    return null;
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
+  const outputPath = path.join(__dirname, "temp_job_banner.jpg");
 
   const titleBn = convertToBanglaDigitsAndMonths(job.title);
   const totalPostBn = convertToBanglaDigitsAndMonths(job.totalPost);
@@ -143,109 +132,134 @@ async function generateJobImage(job) {
   const publishedBn = convertToBanglaDigitsAndMonths(job.published);
   const deadlineBn = convertToBanglaDigitsAndMonths(job.deadline);
 
-  const prompt = `Create a clean, modern, professional square (1:1) Bengali job circular poster for Facebook and social media.
+  const htmlContent = `
+  <!DOCTYPE html>
+  <html lang="bn">
+  <head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        width: 800px;
+        height: 800px;
+        margin: 0;
+        padding: 40px;
+        box-sizing: border-box;
+        font-family: 'Hind Siliguri', sans-serif;
+        background: #ffffff;
+        color: #1a202c;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .header {
+        text-align: center;
+        border-bottom: 3px solid #0d9488;
+        padding-bottom: 20px;
+      }
+      .title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #0f766e;
+        margin: 0;
+        line-height: 1.3;
+      }
+      .subtitle {
+        font-size: 20px;
+        color: #475569;
+        margin-top: 8px;
+        font-weight: 600;
+      }
+      .info-grid {
+        margin: 25px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .info-row {
+        display: flex;
+        align-items: center;
+        font-size: 20px;
+        background: #f8fafc;
+        padding: 10px 18px;
+        border-radius: 8px;
+        border-left: 5px solid #0d9488;
+      }
+      .info-label {
+        font-weight: 700;
+        color: #334155;
+        min-width: 190px;
+      }
+      .info-val {
+        color: #0f172a;
+        font-weight: 500;
+        flex: 1;
+      }
+      .footer {
+        background: #0f766e;
+        color: #ffffff;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+      }
+      .footer-top {
+        font-size: 18px;
+        margin-bottom: 6px;
+      }
+      .brand-name {
+        font-size: 26px;
+        font-weight: 700;
+        color: #fef08a;
+      }
+      .address {
+        font-size: 18px;
+        margin-top: 4px;
+      }
+      .phone {
+        font-size: 28px;
+        font-weight: 700;
+        margin-top: 8px;
+        letter-spacing: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1 class="title">${titleBn}</h1>
+      <div class="subtitle">নিয়োগ বিজ্ঞপ্তি</div>
+    </div>
 
-Style Requirements:
-- Minimalist design.
-- Use ONLY 2–3 colors (for example: dark green + white + black, or navy blue + white + dark gray).
-- White or very light background.
-- No gradients, no fancy effects, no decorative elements.
-- No logos, no stock photos, no illustrations.
-- High contrast and easy to read.
-- Clean typography with proper Bengali Unicode fonts.
-- Keep generous spacing and alignment.
-- Suitable for social media promotion by a computer & online service center.
+    <div class="info-grid">
+      <div class="info-row"><span class="info-label">🗂️ মোট পদ/ক্যাটাগরি:</span><span class="info-val">${totalPostBn}</span></div>
+      <div class="info-row"><span class="info-label">🎓 শিক্ষাগত যোগ্যতা:</span><span class="info-val">${qualificationBn}</span></div>
+      <div class="info-row"><span class="info-label">🎂 বয়সসীমা:</span><span class="info-val">${ageLimitBn}</span></div>
+      <div class="info-row"><span class="info-label">💰 বেতন গ্রেড:</span><span class="info-val">${salaryBn}</span></div>
+      <div class="info-row"><span class="info-label">📅 বিজ্ঞপ্তি প্রকাশ:</span><span class="info-val">${publishedBn}</span></div>
+      <div class="info-row"><span class="info-label">⏰ আবেদনের শেষ তারিখ:</span><span class="info-val">${deadlineBn}</span></div>
+    </div>
 
-Layout:
-
-1. Large bold title at the top
-Use only the Bengali organization name followed by:
-"নিয়োগ বিজ্ঞপ্তি"
-Example:
-"${titleBn} নিয়োগ বিজ্ঞপ্তি"
-
-Do NOT write:
-"নিয়োগ বিজ্ঞপ্তি" separately above the title.
-Do NOT include any logo.
-
-2. A thin horizontal divider.
-
-3. Information section with simple monochrome icons on the left.
-
-Each line should contain:
-
-🗂️ মোট পদ/ক্যাটাগরি: ${totalPostBn}
-🎓 শিক্ষাগত যোগ্যতা: ${qualificationBn}
-🎂 বয়সসীমা: ${ageLimitBn}
-💰 বেতন গ্রেড: ${salaryBn}
-📅 বিজ্ঞপ্তি প্রকাশ: ${publishedBn}
-⏰ আবেদনের শেষ তারিখ: ${deadlineBn}
-
-Icons should be simple, flat, and consistent.
-
-4. Bottom Contact Section
-
-A bordered box with a slightly darker background.
-
-Top line inside the box:
-
-"যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন"
-
-Below that display prominently:
-
-এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস
-
-Then:
-
-📍 বাংলাবাজার রোড, বরিশাল।
-
-Then a large, highly visible phone number:
-
-📞 01533199800
-
-The phone number must be one of the most noticeable elements in the poster with WhatsApp, telegram and call logo.
-
-Typography Rules:
-- All body text must be in Bengali.
-- Convert all English dates and numbers into Bengali.
-- Use Bengali numerals (০১২৩৪৫৬৭৮৯).
-- Never leave English month names like July or August.
-- Keep punctuation clean.
-- Maintain perfect spelling and formatting.
-- Make the title significantly larger than the rest.
-- Ensure every line is aligned and evenly spaced.
-
-Output Requirements:
-- Square aspect ratio (1:1).
-- High resolution (minimum 2000×2000 pixels).
-- Crisp text with no spelling mistakes.`;
+    <div class="footer">
+      <div class="footer-top">যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন</div>
+      <div class="brand-name">এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস</div>
+      <div class="address">📍 বাংলাবাজার রোড, বরিশাল।</div>
+      <div class="phone">📞 01533199800</div>
+    </div>
+  </body>
+  </html>
+  `;
 
   try {
-    console.log("Gemini/Imagen দিয়ে ছবি জেনারেট করা হচ্ছে...");
-    
-    const response = await ai.models.generateImages({
-      model: "imagen-3.0-generate-002",
-      prompt: prompt,
-      config: {
-        numberOfImages: 1,
-        outputMimeType: "image/jpeg",
-        aspectRatio: "1:1",
-      },
+    console.log("এইচডি ব্যানার ইমেজ তৈরি করা হচ্ছে...");
+    await nodeHtmlToImage({
+      output: outputPath,
+      html: htmlContent,
+      type: 'jpeg',
+      quality: 100
     });
-
-    if (response.generatedImages && response.generatedImages.length > 0) {
-      const base64ImageBytes = response.generatedImages[0].image.imageBytes;
-      const buffer = Buffer.from(base64ImageBytes, "base64");
-      const imagePath = path.join(__dirname, "temp_job_banner.jpg");
-      fs.writeFileSync(imagePath, buffer);
-      console.log("ছবি সফলভাবে জেনারেট ও সেভ হয়েছে ✅");
-      return imagePath;
-    } else {
-      console.error("Gemini থেকে কোনো ছবি পাওয়া যায়নি।");
-      return null;
-    }
+    console.log("ব্যানার ফটো সফলভাবে তৈরি হয়েছে ✅");
+    return outputPath;
   } catch (error) {
-    console.error("Gemini Image Generation এ সমস্যা:", error.message || error);
+    console.error("ইমেজ তৈরিতে সমস্যা:", error.message || error);
     return null;
   }
 }
@@ -263,7 +277,7 @@ function formatMessage(job) {
     `📅 *বিজ্ঞপ্তি প্রকাশ:* ${job.published}`,
     `⏰ *আবেদনের শেষ তারিখ:* ${job.deadline}`,
     ``,
-    ` যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন:`,
+    `বিস্তারিত জানতে ও অনলাইনে আবেদন করতে যোগাযোগ করুন:`,
     ``,
     `এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস`,
     `বাংলাবাজার রোড, বরিশাল।`,
@@ -271,7 +285,7 @@ function formatMessage(job) {
   ].join("\n");
 }
 
-// ---------- Telegram (sendPhoto / sendMessage API) ----------
+// ---------- Telegram API ----------
 
 async function sendTelegramPhoto(imagePath, caption) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -339,7 +353,6 @@ async function main() {
 
     let sentSuccessfully = false;
 
-    // ১. ছবি তৈরি হলে ছবি সহ পাঠাবে
     if (imagePath && fs.existsSync(imagePath)) {
       sentSuccessfully = await sendTelegramPhoto(imagePath, messageText);
       try {
@@ -347,9 +360,8 @@ async function main() {
       } catch (err) {}
     }
 
-    // ২. কোনো কারণে ছবি জেনারেট না হলে বা সেন্ড করতে না পারলে টেক্সট ব্যাকআপ পাঠাবে
     if (!sentSuccessfully) {
-      console.log("ছবি জেনারেট/সেন্ড না হওয়ায় টেক্সট ফরম্যাটে নোটিফিকেশন পাঠানো হচ্ছে...");
+      console.log("টেক্সট ফরম্যাটে নোটিফিকেশন পাঠানো হচ্ছে...");
       await sendTelegramMessage(messageText);
     }
 
