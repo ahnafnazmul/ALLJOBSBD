@@ -25,7 +25,6 @@ function loadSentUrls() {
 }
 
 function saveSentUrls(set) {
-  // সব পুরনো ডাটা বেড়ে না যাওয়ার জন্য সর্বশেষ ৫০০টা রাখি
   const arr = Array.from(set).slice(-500);
   fs.writeFileSync(SENT_FILE, JSON.stringify(arr, null, 2), "utf-8");
 }
@@ -69,13 +68,11 @@ function convertToBanglaDigitsAndMonths(text) {
 
   let str = text;
   
-  // মাস রূপান্তর
   Object.keys(months).forEach(enMonth => {
     const reg = new RegExp(enMonth, 'gi');
     str = str.replace(reg, months[enMonth]);
   });
 
-  // সংখ্যা রূপান্তর
   str = str.replace(/[0-9]/g, w => digits[w]);
 
   return str;
@@ -138,7 +135,6 @@ async function generateJobImage(job) {
 
   const ai = new GoogleGenAI({ apiKey });
 
-  // ডাটা বাংলায় প্রস্তুত করা
   const titleBn = convertToBanglaDigitsAndMonths(job.title);
   const totalPostBn = convertToBanglaDigitsAndMonths(job.totalPost);
   const qualificationBn = convertToBanglaDigitsAndMonths(job.qualification);
@@ -210,7 +206,6 @@ Then a large, highly visible phone number:
 The phone number must be one of the most noticeable elements in the poster with WhatsApp, telegram and call logo.
 
 Typography Rules:
-- Process slowly copy the Bengali Text exactly as it is from prompt
 - All body text must be in Bengali.
 - Convert all English dates and numbers into Bengali.
 - Use Bengali numerals (০১২৩৪৫৬৭৮৯).
@@ -223,15 +218,12 @@ Typography Rules:
 Output Requirements:
 - Square aspect ratio (1:1).
 - High resolution (minimum 2000×2000 pixels).
-- Print-ready quality.
-- Crisp text with no spelling mistakes.
-- Do not omit or invent any information.
-- Follow the supplied information exactly.`;
+- Crisp text with no spelling mistakes.`;
 
   try {
     console.log("Gemini/Imagen দিয়ে ছবি জেনারেট করা হচ্ছে...");
     const response = await ai.models.generateImages({
-      model: "imagen-3.0-generate-002",
+      model: "imagen-3.0-generate-001",
       prompt: prompt,
       config: {
         numberOfImages: 1,
@@ -257,37 +249,33 @@ Output Requirements:
   }
 }
 
-// ---------- টেলিগ্রাম ক্যাপশন ফরম্যাট ----------
+// ---------- টেলিগ্রাম টেক্সট/ক্যাপশন ফরম্যাট ----------
 
-function formatCaption(job) {
+function formatMessage(job) {
   return [
-    `📢 *${job.title}*`,
+    `📣 *${job.title}*`,
     ``,
-    `🗂️ মোট পদ/ক্যাটাগরি: ${job.totalPost}`,
-    `🎓 শিক্ষাগত যোগ্যতা: ${job.qualification}`,
-    `🎂 বয়সসীমা: ${job.ageLimit}`,
-    `💰 বেতন গ্রেড: ${job.salary}`,
-    `📅 বিজ্ঞপ্তি প্রকাশ: ${job.published}`,
-    `⏰ আবেদনের শেষ তারিখ: ${job.deadline}`,
-    ``,
-    `🔗 মূল লিংক: ${job.url}`,
+    `🗂️ *মোট পদ/ক্যাটাগরি:* ${job.totalPost}`,
+    `🎓 *শিক্ষাগত যোগ্যতা:* ${job.qualification}`,
+    `🎂 *বয়সসীমা:* ${job.ageLimit}`,
+    `💰 *বেতন গ্রেড:* ${job.salary}`,
+    `📅 *বিজ্ঞপ্তি প্রকাশ:* ${job.published}`,
+    `⏰ *আবেদনের শেষ তারিখ:* ${job.deadline}`,
     ``,
     `বিস্তারিত জানতে ও অনলাইনে আবেদন করতে যোগাযোগ করুন:`,
-    `🏢 *এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস*`,
-    `📍 বাংলাবাজার রোড, বরিশাল।`,
-    `📱 01533199800`,
+    ``,
+    `এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস`,
+    `বাংলাবাজার রোড, বরিশাল।`,
+    `01533199800`,
   ].join("\n");
 }
 
-// ---------- Telegram (sendPhoto API) ----------
+// ---------- Telegram (sendPhoto / sendMessage API) ----------
 
 async function sendTelegramPhoto(imagePath, caption) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) {
-    console.log("Telegram env var নেই, স্কিপ করা হলো");
-    return;
-  }
+  if (!token || !chatId) return false;
 
   const url = `https://api.telegram.org/bot${token}/sendPhoto`;
 
@@ -298,12 +286,31 @@ async function sendTelegramPhoto(imagePath, caption) {
     formData.append("caption", caption);
     formData.append("parse_mode", "Markdown");
 
-    await axios.post(url, formData, {
-      headers: formData.getHeaders(),
-    });
+    await axios.post(url, formData, { headers: formData.getHeaders() });
     console.log("Telegram এ ছবিসহ বার্তা পাঠানো হলো ✅");
+    return true;
   } catch (e) {
     console.error("Telegram এ ছবি পাঠাতে সমস্যা:", e.response?.data || e.message);
+    return false;
+  }
+}
+
+async function sendTelegramMessage(text) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return;
+
+  const url = `https://api.telegram.org/bot${token}/sendMessage`;
+  try {
+    await axios.post(url, {
+      chat_id: chatId,
+      text,
+      parse_mode: "Markdown",
+      disable_web_page_preview: false,
+    });
+    console.log("Telegram এ টেক্সট বার্তা পাঠানো হলো ✅");
+  } catch (e) {
+    console.error("Telegram এ টেক্সট পাঠাতে সমস্যা:", e.response?.data || e.message);
   }
 }
 
@@ -326,16 +333,23 @@ async function main() {
   console.log(`${newJobs.length}টি নতুন বিজ্ঞপ্তি পাওয়া গেছে, প্রসেস করা হচ্ছে...`);
 
   for (const job of newJobs) {
-    const caption = formatCaption(job);
+    const messageText = formatMessage(job);
     const imagePath = await generateJobImage(job);
 
+    let sentSuccessfully = false;
+
+    // ১. ছবি তৈরি হলে ছবি সহ পাঠাবে
     if (imagePath && fs.existsSync(imagePath)) {
-      await sendTelegramPhoto(imagePath, caption);
+      sentSuccessfully = await sendTelegramPhoto(imagePath, messageText);
       try {
         fs.unlinkSync(imagePath);
       } catch (err) {}
-    } else {
-      console.log("ছবি জেনারেট না হওয়ায় বার্তা স্কিপ করা হলো।");
+    }
+
+    // ২. কোনো কারণে ছবি তৈরি না হলে বা সেন্ড না হলে আগের মতো সুন্দর টেক্সট মেসেজ পাঠাবে
+    if (!sentSuccessfully) {
+      console.log("ছবি জেনারেট/সেন্ড না হওয়ায় টেক্সট ফরম্যাটে নোটিফিকেশন পাঠানো হচ্ছে...");
+      await sendTelegramMessage(messageText);
     }
 
     sent.add(job.url);
