@@ -1,5 +1,5 @@
 // bdgovt.info থেকে নতুন চাকরির বিজ্ঞপ্তি স্ক্র্যাপ করে Gemini API দিয়ে ছবি বানিয়ে Telegram এ পাঠায়
-// প্রতি ৪ ঘন্টায় একবার GitHub Actions cron দিয়ে চলে
+// প্রতি ৪ ঘন্টায় একবার GitHub Actions cron দিয়ে চলে (দেখুন .github/workflows/scrape.yml)
 
 const axios = require("axios");
 const cheerio = require("cheerio");
@@ -222,8 +222,9 @@ Output Requirements:
 
   try {
     console.log("Gemini/Imagen দিয়ে ছবি জেনারেট করা হচ্ছে...");
+    
     const response = await ai.models.generateImages({
-      model: "imagen-3.0-generate-001",
+      model: "imagen-3.0-generate-002",
       prompt: prompt,
       config: {
         numberOfImages: 1,
@@ -262,7 +263,7 @@ function formatMessage(job) {
     `📅 *বিজ্ঞপ্তি প্রকাশ:* ${job.published}`,
     `⏰ *আবেদনের শেষ তারিখ:* ${job.deadline}`,
     ``,
-    `বিস্তারিত জানতে ও অনলাইনে আবেদন করতে যোগাযোগ করুন:`,
+    ` যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন:`,
     ``,
     `এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস`,
     `বাংলাবাজার রোড, বরিশাল।`,
@@ -346,7 +347,7 @@ async function main() {
       } catch (err) {}
     }
 
-    // ২. কোনো কারণে ছবি তৈরি না হলে বা সেন্ড না হলে আগের মতো সুন্দর টেক্সট মেসেজ পাঠাবে
+    // ২. কোনো কারণে ছবি জেনারেট না হলে বা সেন্ড করতে না পারলে টেক্সট ব্যাকআপ পাঠাবে
     if (!sentSuccessfully) {
       console.log("ছবি জেনারেট/সেন্ড না হওয়ায় টেক্সট ফরম্যাটে নোটিফিকেশন পাঠানো হচ্ছে...");
       await sendTelegramMessage(messageText);
