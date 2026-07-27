@@ -18,16 +18,17 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Chrome সেটআপ
+        uses: browser-actions/setup-chrome@v1
+
       - name: প্যাকেজ ইন্সটল
         run: npm install
-
-      - name: Chrome & Puppeteer ডিপেনডেন্সি সেটআপ
-        uses: puppeteer/replay-action@v1
 
       - name: স্ক্র্যাপ ও নোটিফাই
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
         run: node scrape.js
 
       - name: পাঠানো পোস্টের তালিকা (sent.json) কমিট করা
