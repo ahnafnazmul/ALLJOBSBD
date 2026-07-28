@@ -135,7 +135,7 @@ async function fetchJobs() {
   return jobs;
 }
 
-// ---------- এইচডি ব্যানার ইমেজ তৈরি ----------
+// ---------- পারফেক্ট লেআউটের এইচডি ব্যানার ইমেজ তৈরি ----------
 
 async function generateJobImage(job) {
   const outputPath = path.join(__dirname, "temp_job_banner.jpg");
@@ -171,7 +171,7 @@ async function generateJobImage(job) {
         background: #f8fafc;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
+        overflow: hidden;
       }
       
       /* হেডার সেকশন */
@@ -179,10 +179,14 @@ async function generateJobImage(job) {
         background-color: ${theme.primary};
         color: #ffffff;
         text-align: center;
-        padding: 22px 20px;
+        padding: 16px 20px;
+        min-height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       .header-title {
-        font-size: 38px;
+        font-size: 32px;
         font-weight: 800;
         margin: 0;
         line-height: 1.25;
@@ -190,7 +194,7 @@ async function generateJobImage(job) {
 
       /* বডি কনটেন্ট */
       .content-body {
-        padding: 10px 40px;
+        padding: 15px 35px;
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -200,42 +204,47 @@ async function generateJobImage(job) {
       .info-list {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
       }
 
       .info-item {
         display: flex;
-        align-items: center;
-        font-size: 23px;
+        align-items: flex-start;
+        font-size: 21px;
         color: #0f172a;
         font-weight: 700;
+        line-height: 1.3;
       }
 
       .info-icon {
-        font-size: 26px;
-        width: 42px;
+        font-size: 24px;
+        width: 36px;
         text-align: center;
         margin-right: 8px;
+        flex-shrink: 0;
       }
 
       .info-label {
         color: #0f172a;
         margin-right: 6px;
         white-space: nowrap;
+        flex-shrink: 0;
       }
 
       .info-val {
         color: #0f172a;
         font-weight: 800;
+        word-break: break-word;
       }
 
-      /* বড় ও সুনির্দিষ্ট ফুটার সেকশন */
+      /* নিখুঁত ও কাটিং-প্রুফ ফুটার সেকশন */
       .footer-container {
         padding: 0 25px 20px 25px;
+        margin-top: auto;
       }
 
       .footer-card {
-        border: 3px solid ${theme.primary};
+        border: 2px solid ${theme.primary};
         border-radius: 12px;
         overflow: hidden;
         background: #ffffff;
@@ -244,26 +253,28 @@ async function generateJobImage(job) {
       .footer-top-banner {
         background-color: #ffffff;
         color: ${theme.primary};
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 800;
-        padding: 8px 10px;
+        padding: 6px 10px;
         text-align: center;
-        border-bottom: 3px solid ${theme.primary};
+        border-bottom: 2px solid ${theme.primary};
       }
 
       .footer-main-body {
         background-color: ${theme.primary};
         color: #ffffff;
-        padding: 16px 20px 20px 20px;
+        padding: 12px 15px 14px 15px;
         text-align: center;
       }
 
       .brand-title {
-        font-size: 38px;
+        font-size: 31px;
         font-weight: 900;
-        margin-bottom: 12px;
-        letter-spacing: -0.3px;
-        line-height: 1.1;
+        margin-bottom: 6px;
+        letter-spacing: -0.2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .footer-bottom-row {
@@ -276,23 +287,23 @@ async function generateJobImage(job) {
       .brand-address {
         display: flex;
         align-items: center;
-        gap: 8px;
-        font-size: 28px;
+        gap: 6px;
+        font-size: 25px;
         font-weight: 800;
       }
 
       .phone-section {
         display: flex;
         align-items: center;
-        gap: 10px;
-        font-size: 34px;
+        gap: 8px;
+        font-size: 30px;
         font-weight: 800;
       }
 
       .social-icons {
         display: flex;
-        gap: 8px;
-        font-size: 30px;
+        gap: 6px;
+        font-size: 26px;
       }
 
       .fa-whatsapp {
@@ -347,7 +358,7 @@ async function generateJobImage(job) {
       </div>
     </div>
 
-    <!-- বড় ও ফিল করা ফুটার বক্স -->
+    <!-- ১ লাইনে বড় নাম ও ফিট হওয়া সলিড ফুটার বক্স -->
     <div class="footer-container">
       <div class="footer-card">
         <div class="footer-top-banner">যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন</div>
