@@ -12,7 +12,7 @@ const SENT_FILE = path.join(__dirname, "sent.json");
 
 const LABELS = ["মোট পদ", "যোগ্যতা", "বয়সসীমা", "বেতন", "শেষ আবেদন"];
 
-// কালার থিম কালেকশন (ভ্যারিয়েশনের জন্য)
+// কালার থিম কালেকশন
 const COLOR_THEMES = [
   {
     primary: "#0a3c22",      // Deep Forest Green
@@ -89,6 +89,24 @@ function convertToBanglaDigitsAndMonths(text) {
   return str;
 }
 
+// টাইটেল থেকে বাংলা ও ইংরেজি আলাদা করার ফাংশন
+function parseTitle(title) {
+  // ইংরেজি অংশের শুরু খোঁজা (যেমন Bashundhara বা Police বা Job Circular)
+  const match = title.match(/([A-Za-z].*)/);
+  if (match) {
+    const banglaPart = title.substring(0, match.index).trim();
+    const englishPart = match[0].trim();
+    return {
+      bn: convertToBanglaDigitsAndMonths(banglaPart),
+      en: englishPart
+    };
+  }
+  return {
+    bn: convertToBanglaDigitsAndMonths(title),
+    en: ""
+  };
+}
+
 // ---------- স্ক্র্যাপিং ----------
 
 async function fetchJobs() {
@@ -119,13 +137,17 @@ async function fetchJobs() {
       .split(/\bCategories\b/u)[0]
       .trim();
 
+    let ageVal = extractField(fullText, "বয়সসীমা", LABELS);
+    // বয়সসীমায় ভুলবশত টাকা চিহ্ন (৳ বা tk) থাকলে তা রিমুভ করা
+    ageVal = ageVal.replace(/[৳Tk\.]/g, "").trim();
+
     const job = {
       title,
       url,
       published: extractPublishedDate(fullText),
       totalPost: extractField(fullText, "মোট পদ", LABELS),
       qualification: extractField(fullText, "যোগ্যতা", LABELS),
-      ageLimit: extractField(fullText, "বয়সসীমা", LABELS),
+      ageLimit: ageVal,
       salary: extractField(fullText, "বেতন", LABELS),
       deadline: extractField(fullText, "শেষ আবেদন", LABELS),
     };
@@ -135,12 +157,12 @@ async function fetchJobs() {
   return jobs;
 }
 
-// ---------- পারফেক্ট লেআউটের এইচডি ব্যানার ইমেজ তৈরি ----------
+// ---------- নিখুঁত ডিজাইনের এইচডি ব্যানার ইমেজ তৈরি ----------
 
 async function generateJobImage(job) {
   const outputPath = path.join(__dirname, "temp_job_banner.jpg");
 
-  const titleBn = convertToBanglaDigitsAndMonths(job.title);
+  const titleParsed = parseTitle(job.title);
   const totalPostBn = convertToBanglaDigitsAndMonths(job.totalPost);
   const qualificationBn = convertToBanglaDigitsAndMonths(job.qualification);
   const ageLimitBn = convertToBanglaDigitsAndMonths(job.ageLimit);
@@ -156,7 +178,7 @@ async function generateJobImage(job) {
   <html lang="bn">
   <head>
     <meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@600;700;800;900&family=Hind+Siliguri:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@600;700;800;900&family=Hind+Siliguri:wght@600;700;800&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
       * {
@@ -171,30 +193,40 @@ async function generateJobImage(job) {
         background: #f8fafc;
         display: flex;
         flex-direction: column;
+        justify-content: space-between;
         overflow: hidden;
       }
       
-      /* হেডার সেকশন */
+      /* হেডার সেকশন: ১ম লাইন বাংলা, ২য় লাইন ইংরেজি */
       .header-box {
         background-color: ${theme.primary};
         color: #ffffff;
         text-align: center;
-        padding: 16px 20px;
-        min-height: 100px;
+        padding: 20px 24px;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 6px;
       }
-      .header-title {
-        font-size: 32px;
+      .header-title-bn {
+        font-size: 36px;
         font-weight: 800;
+        line-height: 1.2;
         margin: 0;
-        line-height: 1.25;
+      }
+      .header-title-en {
+        font-size: 24px;
+        font-weight: 700;
+        font-family: 'Poppins', sans-serif;
+        opacity: 0.95;
+        margin: 0;
+        line-height: 1.2;
       }
 
-      /* বডি কনটেন্ট */
+      /* বডি কনটেন্ট: সুন্দর স্পেসিং দিয়ে ফিলাপ করা */
       .content-body {
-        padding: 15px 35px;
+        padding: 20px 45px;
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -204,29 +236,29 @@ async function generateJobImage(job) {
       .info-list {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 16px;
       }
 
       .info-item {
         display: flex;
         align-items: flex-start;
-        font-size: 21px;
+        font-size: 24px;
         color: #0f172a;
         font-weight: 700;
-        line-height: 1.3;
+        line-height: 1.35;
       }
 
       .info-icon {
-        font-size: 24px;
-        width: 36px;
+        font-size: 28px;
+        width: 42px;
         text-align: center;
-        margin-right: 8px;
+        margin-right: 10px;
         flex-shrink: 0;
       }
 
       .info-label {
         color: #0f172a;
-        margin-right: 6px;
+        margin-right: 8px;
         white-space: nowrap;
         flex-shrink: 0;
       }
@@ -237,15 +269,14 @@ async function generateJobImage(job) {
         word-break: break-word;
       }
 
-      /* নিখুঁত ও কাটিং-প্রুফ ফুটার সেকশন */
+      /* সলিড ও কম্প্যাক্ট ফুটার সেকশন */
       .footer-container {
-        padding: 0 25px 20px 25px;
-        margin-top: auto;
+        padding: 0 30px 25px 30px;
       }
 
       .footer-card {
         border: 2px solid ${theme.primary};
-        border-radius: 12px;
+        border-radius: 10px;
         overflow: hidden;
         background: #ffffff;
       }
@@ -263,18 +294,16 @@ async function generateJobImage(job) {
       .footer-main-body {
         background-color: ${theme.primary};
         color: #ffffff;
-        padding: 12px 15px 14px 15px;
+        padding: 12px 16px;
         text-align: center;
       }
 
       .brand-title {
-        font-size: 31px;
+        font-size: 30px;
         font-weight: 900;
         margin-bottom: 6px;
-        letter-spacing: -0.2px;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        letter-spacing: -0.2px;
       }
 
       .footer-bottom-row {
@@ -288,15 +317,15 @@ async function generateJobImage(job) {
         display: flex;
         align-items: center;
         gap: 6px;
-        font-size: 25px;
-        font-weight: 800;
+        font-size: 24px;
+        font-weight: 700;
       }
 
       .phone-section {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 30px;
+        font-size: 28px;
         font-weight: 800;
       }
 
@@ -317,9 +346,10 @@ async function generateJobImage(job) {
   </head>
   <body>
 
-    <!-- হেডার -->
+    <!-- হেডার (বাংলা ১ম লাইন, ইংরেজি ২য় লাইন) -->
     <div class="header-box">
-      <div class="header-title">${titleBn}</div>
+      <div class="header-title-bn">${titleParsed.bn}</div>
+      ${titleParsed.en ? `<div class="header-title-en">${titleParsed.en}</div>` : ''}
     </div>
 
     <!-- তথ্যসমূহ -->
@@ -358,7 +388,7 @@ async function generateJobImage(job) {
       </div>
     </div>
 
-    <!-- ১ লাইনে বড় নাম ও ফিট হওয়া সলিড ফুটার বক্স -->
+    <!-- সলিড ফুটার বক্স -->
     <div class="footer-container">
       <div class="footer-card">
         <div class="footer-top-banner">যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন</div>
