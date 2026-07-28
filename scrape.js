@@ -17,23 +17,17 @@ const COLOR_THEMES = [
   {
     primary: "#0f2b48",      // Deep Navy Blue
     accent: "#1e3a8a",
-    lightBg: "#f0fdf4",
-    footerBg: "#0f2b48",
-    footerTextColor: "#ffffff"
+    footerBg: "#0f2b48"
   },
   {
     primary: "#14532d",      // Dark Green
     accent: "#15803d",
-    lightBg: "#f0fdf4",
-    footerBg: "#14532d",
-    footerTextColor: "#ffffff"
+    footerBg: "#14532d"
   },
   {
     primary: "#4c1d95",      // Deep Purple / Violet
     accent: "#6d28d9",
-    lightBg: "#faf5ff",
-    footerBg: "#4c1d95",
-    footerTextColor: "#ffffff"
+    footerBg: "#4c1d95"
   }
 ];
 
@@ -144,7 +138,7 @@ async function fetchJobs() {
   return jobs;
 }
 
-// ---------- নমুনা ছবির মত এইচডি ব্যানার ডিজাইন (HTML -> JPG) ----------
+// ---------- রেফারেন্স ছবির মত বল্ড ও স্পষ্ট ব্যানার তৈরি ----------
 
 async function generateJobImage(job) {
   const outputPath = path.join(__dirname, "temp_job_banner.jpg");
@@ -165,7 +159,8 @@ async function generateJobImage(job) {
   <html lang="bn">
   <head>
     <meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@600;700;800&family=Hind+Siliguri:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
       * {
         box-sizing: border-box;
@@ -175,32 +170,31 @@ async function generateJobImage(job) {
         height: 800px;
         margin: 0;
         padding: 0;
-        font-family: 'Hind Siliguri', sans-serif;
-        background: #f8fafc;
+        font-family: 'Anek Bangla', 'Hind Siliguri', sans-serif;
+        background: #fcfdfd;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
       }
       
-      /* হেডার অংশ (নমুনা ছবির মত) */
+      /* হেডার অংশ */
       .header-box {
         background-color: ${theme.primary};
         color: #ffffff;
         text-align: center;
-        padding: 25px 20px;
-        border-bottom: 5px solid ${theme.accent};
+        padding: 22px 20px;
+        border-bottom: 4px solid ${theme.accent};
       }
       .header-title {
-        font-size: 38px;
+        font-size: 36px;
         font-weight: 800;
         margin: 0;
-        line-height: 1.25;
-        letter-spacing: 0.5px;
+        line-height: 1.2;
       }
 
       /* বডি কনটেন্ট */
       .content-body {
-        padding: 25px 35px;
+        padding: 20px 35px;
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -216,29 +210,31 @@ async function generateJobImage(job) {
       .info-item {
         display: flex;
         align-items: center;
-        font-size: 22px;
-        color: #1e293b;
+        font-size: 23px;
+        color: #0f172a;
         font-weight: 700;
       }
 
       .info-icon {
         font-size: 26px;
-        width: 40px;
+        width: 42px;
         text-align: center;
-        margin-right: 10px;
+        margin-right: 8px;
       }
 
       .info-label {
         color: #0f172a;
         margin-right: 6px;
+        white-space: nowrap;
       }
 
       .info-val {
         color: #1e293b;
-        font-weight: 600;
+        font-weight: 800;
+        letter-spacing: 0.3px;
       }
 
-      /* ফুটার সেকশন (নমুনা ছবির বক্সের মত) */
+      /* রেফারেন্স ছবির মত প্রফেশনাল ফুটার বক্স */
       .footer-container {
         padding: 0 30px 25px 30px;
       }
@@ -255,44 +251,60 @@ async function generateJobImage(job) {
       .footer-top-banner {
         background-color: ${theme.primary};
         color: #ffffff;
-        font-size: 19px;
-        font-weight: 700;
+        font-size: 21px;
+        font-weight: 800;
         padding: 8px 10px;
       }
 
       .footer-details {
-        padding: 12px 10px 15px 10px;
+        padding: 12px 10px 14px 10px;
       }
 
       .brand-title {
-        font-size: 26px;
+        font-size: 32px;
         font-weight: 800;
-        color: #0f172a;
-        margin-bottom: 4px;
+        color: #000000;
+        margin-bottom: 2px;
+        letter-spacing: -0.2px;
       }
 
       .brand-address {
-        font-size: 20px;
+        font-size: 24px;
         font-weight: 700;
-        color: #334155;
-        margin-bottom: 8px;
+        color: #1e293b;
+        margin-bottom: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 6px;
       }
 
-      .phone-pill {
-        display: inline-flex;
+      .phone-section {
+        display: flex;
         align-items: center;
         justify-content: center;
-        background-color: ${theme.primary};
-        color: #ffffff;
-        font-size: 28px;
+        gap: 12px;
+      }
+
+      .social-icons {
+        display: flex;
+        gap: 8px;
+        font-size: 32px;
+      }
+
+      .fa-whatsapp {
+        color: #25D366;
+      }
+
+      .fa-telegram {
+        color: #24A1DE;
+      }
+
+      .phone-number {
+        font-size: 38px;
         font-weight: 800;
-        padding: 4px 25px;
-        border-radius: 8px;
-        letter-spacing: 1px;
+        color: #000000;
+        letter-spacing: 1.5px;
       }
     </style>
   </head>
@@ -339,14 +351,20 @@ async function generateJobImage(job) {
       </div>
     </div>
 
-    <!-- ফুটার বক্স -->
+    <!-- ফুটার বক্স (রেফারেন্স ডিজাইন অনুযায়ী) -->
     <div class="footer-container">
       <div class="footer-card">
         <div class="footer-top-banner">যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন</div>
         <div class="footer-details">
           <div class="brand-title">এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস</div>
           <div class="brand-address">📍 বাংলাবাজার রোড, বরিশাল।</div>
-          <div class="phone-pill">📞 01533199800</div>
+          <div class="phone-section">
+            <div class="social-icons">
+              <i class="fa-brands fa-whatsapp"></i>
+              <i class="fa-brands fa-telegram"></i>
+            </div>
+            <div class="phone-number">01533199800</div>
+          </div>
         </div>
       </div>
     </div>
@@ -396,7 +414,7 @@ function formatMessage(job) {
     `📅 *বিজ্ঞপ্তি প্রকাশ:* ${job.published}`,
     `⏰ *আবেদনের শেষ তারিখ:* ${job.deadline}`,
     ``,
-    `যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন:`,
+    ` বিস্তারিত জানতে ও অনলাইনে আবেদন করতে যোগাযোগ করুন:`,
     ``,
     `এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস`,
     `বাংলাবাজার রোড, বরিশাল।`,
