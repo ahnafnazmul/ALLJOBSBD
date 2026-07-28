@@ -15,19 +15,16 @@ const LABELS = ["মোট পদ", "যোগ্যতা", "বয়সসী
 // কালার থিম কালেকশন (ভ্যারিয়েশনের জন্য)
 const COLOR_THEMES = [
   {
-    primary: "#0f2b48",      // Deep Navy Blue
-    accent: "#1e3a8a",
-    footerBg: "#0f2b48"
+    primary: "#0a3c22",      // Deep Forest Green
+    accent: "#125a33"
   },
   {
-    primary: "#14532d",      // Dark Green
-    accent: "#15803d",
-    footerBg: "#14532d"
+    primary: "#0f2b48",      // Deep Navy Blue
+    accent: "#1e3a8a"
   },
   {
     primary: "#4c1d95",      // Deep Purple / Violet
-    accent: "#6d28d9",
-    footerBg: "#4c1d95"
+    accent: "#6d28d9"
   }
 ];
 
@@ -138,7 +135,7 @@ async function fetchJobs() {
   return jobs;
 }
 
-// ---------- রেফারেন্স ছবির মত বল্ড ও স্পষ্ট ব্যানার তৈরি ----------
+// ---------- ২য় রেফারেন্স ছবির মত একদম নিখুঁত ব্যানার তৈরি ----------
 
 async function generateJobImage(job) {
   const outputPath = path.join(__dirname, "temp_job_banner.jpg");
@@ -171,30 +168,29 @@ async function generateJobImage(job) {
         margin: 0;
         padding: 0;
         font-family: 'Anek Bangla', 'Hind Siliguri', sans-serif;
-        background: #fcfdfd;
+        background: #f8fafc;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
       }
       
-      /* হেডার অংশ */
+      /* হেডার সেকশন */
       .header-box {
         background-color: ${theme.primary};
         color: #ffffff;
         text-align: center;
-        padding: 22px 20px;
-        border-bottom: 4px solid ${theme.accent};
+        padding: 24px 20px;
       }
       .header-title {
-        font-size: 36px;
+        font-size: 38px;
         font-weight: 800;
         margin: 0;
-        line-height: 1.2;
+        line-height: 1.25;
       }
 
       /* বডি কনটেন্ট */
       .content-body {
-        padding: 20px 35px;
+        padding: 10px 40px;
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -204,7 +200,7 @@ async function generateJobImage(job) {
       .info-list {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 14px;
       }
 
       .info-item {
@@ -229,12 +225,11 @@ async function generateJobImage(job) {
       }
 
       .info-val {
-        color: #1e293b;
+        color: #0f172a;
         font-weight: 800;
-        letter-spacing: 0.3px;
       }
 
-      /* রেফারেন্স ছবির মত প্রফেশনাল ফুটার বক্স */
+      /* রেফারেন্স ২ অনুযায়ী টাইট ও গ্যাপহীন ফুটার বক্স */
       .footer-container {
         padding: 0 30px 25px 30px;
       }
@@ -244,52 +239,58 @@ async function generateJobImage(job) {
         border-radius: 12px;
         overflow: hidden;
         background: #ffffff;
-        text-align: center;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
       }
 
       .footer-top-banner {
-        background-color: ${theme.primary};
-        color: #ffffff;
-        font-size: 21px;
+        background-color: #ffffff;
+        color: ${theme.primary};
+        font-size: 20px;
         font-weight: 800;
-        padding: 8px 10px;
+        padding: 6px 10px;
+        text-align: center;
+        border-bottom: 2px solid ${theme.primary};
       }
 
-      .footer-details {
-        padding: 12px 10px 14px 10px;
+      .footer-main-body {
+        background-color: ${theme.primary};
+        color: #ffffff;
+        padding: 12px 15px;
+        text-align: center;
       }
 
       .brand-title {
-        font-size: 32px;
+        font-size: 30px;
         font-weight: 800;
-        color: #000000;
-        margin-bottom: 2px;
+        margin-bottom: 8px;
         letter-spacing: -0.2px;
       }
 
-      .brand-address {
-        font-size: 24px;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 10px;
+      .footer-bottom-row {
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: space-around;
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .brand-address {
+        display: flex;
+        align-items: center;
         gap: 6px;
       }
 
       .phone-section {
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 12px;
+        gap: 8px;
+        font-size: 28px;
+        font-weight: 800;
       }
 
       .social-icons {
         display: flex;
-        gap: 8px;
-        font-size: 32px;
+        gap: 6px;
+        font-size: 24px;
       }
 
       .fa-whatsapp {
@@ -298,13 +299,6 @@ async function generateJobImage(job) {
 
       .fa-telegram {
         color: #24A1DE;
-      }
-
-      .phone-number {
-        font-size: 38px;
-        font-weight: 800;
-        color: #000000;
-        letter-spacing: 1.5px;
       }
     </style>
   </head>
@@ -351,19 +345,21 @@ async function generateJobImage(job) {
       </div>
     </div>
 
-    <!-- ফুটার বক্স (রেফারেন্স ডিজাইন অনুযায়ী) -->
+    <!-- ২য় রেফারেন্স ছবির মত সলিড ফুটার বক্স -->
     <div class="footer-container">
       <div class="footer-card">
         <div class="footer-top-banner">যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন</div>
-        <div class="footer-details">
+        <div class="footer-main-body">
           <div class="brand-title">এফ. এন. এফ কম্পিউটার & অনলাইন সার্ভিসেস</div>
-          <div class="brand-address">📍 বাংলাবাজার রোড, বরিশাল।</div>
-          <div class="phone-section">
-            <div class="social-icons">
-              <i class="fa-brands fa-whatsapp"></i>
-              <i class="fa-brands fa-telegram"></i>
+          <div class="footer-bottom-row">
+            <div class="brand-address">📍 বাংলাবাজার রোড, বরিশাল।</div>
+            <div class="phone-section">
+              <div class="social-icons">
+                <i class="fa-brands fa-whatsapp"></i>
+                <i class="fa-brands fa-telegram"></i>
+              </div>
+              <span>01533199800</span>
             </div>
-            <div class="phone-number">01533199800</div>
           </div>
         </div>
       </div>
