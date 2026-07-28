@@ -135,7 +135,7 @@ async function fetchJobs() {
   return jobs;
 }
 
-// ---------- ২য় রেফারেন্স ছবির মত একদম নিখুঁত ব্যানার তৈরি ----------
+// ---------- এইচডি ব্যানার ইমেজ তৈরি ----------
 
 async function generateJobImage(job) {
   const outputPath = path.join(__dirname, "temp_job_banner.jpg");
@@ -156,7 +156,7 @@ async function generateJobImage(job) {
   <html lang="bn">
   <head>
     <meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@600;700;800&family=Hind+Siliguri:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@600;700;800;900&family=Hind+Siliguri:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
       * {
@@ -179,7 +179,7 @@ async function generateJobImage(job) {
         background-color: ${theme.primary};
         color: #ffffff;
         text-align: center;
-        padding: 24px 20px;
+        padding: 22px 20px;
       }
       .header-title {
         font-size: 38px;
@@ -200,7 +200,7 @@ async function generateJobImage(job) {
       .info-list {
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
       }
 
       .info-item {
@@ -229,13 +229,13 @@ async function generateJobImage(job) {
         font-weight: 800;
       }
 
-      /* রেফারেন্স ২ অনুযায়ী টাইট ও গ্যাপহীন ফুটার বক্স */
+      /* বড় ও সুনির্দিষ্ট ফুটার সেকশন */
       .footer-container {
-        padding: 0 30px 25px 30px;
+        padding: 0 25px 20px 25px;
       }
 
       .footer-card {
-        border: 2px solid ${theme.primary};
+        border: 3px solid ${theme.primary};
         border-radius: 12px;
         overflow: hidden;
         background: #ffffff;
@@ -244,42 +244,36 @@ async function generateJobImage(job) {
       .footer-top-banner {
         background-color: #ffffff;
         color: ${theme.primary};
-        font-size: 20px;
+        font-size: 22px;
         font-weight: 800;
-        padding: 6px 10px;
+        padding: 8px 10px;
         text-align: center;
-        border-bottom: 2px solid ${theme.primary};
+        border-bottom: 3px solid ${theme.primary};
       }
 
       .footer-main-body {
         background-color: ${theme.primary};
         color: #ffffff;
-        padding: 12px 15px;
+        padding: 16px 20px 20px 20px;
         text-align: center;
       }
 
       .brand-title {
-        font-size: 30px;
-        font-weight: 800;
-        margin-bottom: 8px;
-        letter-spacing: -0.2px;
+        font-size: 38px;
+        font-weight: 900;
+        margin-bottom: 12px;
+        letter-spacing: -0.3px;
+        line-height: 1.1;
       }
 
       .footer-bottom-row {
         display: flex;
         align-items: center;
-        justify-content: space-around;
-        font-size: 24px;
-        font-weight: 700;
+        justify-content: space-between;
+        padding: 0 10px;
       }
 
       .brand-address {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .phone-section {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -287,10 +281,18 @@ async function generateJobImage(job) {
         font-weight: 800;
       }
 
+      .phone-section {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 34px;
+        font-weight: 800;
+      }
+
       .social-icons {
         display: flex;
-        gap: 6px;
-        font-size: 24px;
+        gap: 8px;
+        font-size: 30px;
       }
 
       .fa-whatsapp {
@@ -345,7 +347,7 @@ async function generateJobImage(job) {
       </div>
     </div>
 
-    <!-- ২য় রেফারেন্স ছবির মত সলিড ফুটার বক্স -->
+    <!-- বড় ও ফিল করা ফুটার বক্স -->
     <div class="footer-container">
       <div class="footer-card">
         <div class="footer-top-banner">যেকোন চাকুরির অনলাইনে আবেদন করতে যোগাযোগ করুন</div>
