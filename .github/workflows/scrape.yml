@@ -1,39 +1,33 @@
 name: BD Govt Job Notifier
-
 on:
   schedule:
     - cron: '0 */4 * * *'
   workflow_dispatch:
-
 jobs:
   scrape-and-notify:
     runs-on: ubuntu-latest
-
     steps:
       - name: রিপো চেকআউট করা
         uses: actions/checkout@v4
-
       - name: Node.js সেটআপ
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Chrome সেটআপ
         uses: browser-actions/setup-chrome@v1
-
       - name: প্যাকেজ ইন্সটল
         run: npm install
         env:
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
           PUPPETEER_SKIP_DOWNLOAD: true
-
       - name: স্ক্র্যাপ ও নোটিফাই
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          AGGREGATOR_BOT_TOKEN: ${{ secrets.AGGREGATOR_BOT_TOKEN }}
+          AGGREGATOR_CHAT_ID: ${{ secrets.AGGREGATOR_CHAT_ID }}
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
         run: node scrape.js
-
       - name: পাঠানো পোস্টের তালিকা (sent.json) কমিট করা
         run: |
           git config --global user.name "github-actions[bot]"
