@@ -1,4 +1,4 @@
-// bdgovt.info থেকে নতুন চাকরির বিজ্ঞপ্তি স্ক্র্যাপ করে HD ব্যানার ইমেজ তৈরি করে Telegram এ পাঠায়
+// bdgovt.info থেকে নতুন চাকরির বিজ্ঞপ্তি স্ক্র্যাপ করে HD ব্যানার ইমেজ তৈরি করে Telegram এ পাঠায়
 
 const axios = require("axios");
 const cheerio = require("cheerio");
@@ -290,7 +290,7 @@ async function generateJobImage(job) {
         word-break: break-word;
       }
 
-      /* বোল্ড ও চওড়া ফুটার সেকশন */
+      /* বোল্ড ও চওড়া ফুটার সেকশন */
       .footer-container {
         padding: 0 25px 20px 25px;
         z-index: 2;
@@ -457,7 +457,7 @@ async function generateJobImage(job) {
         ]
       }
     });
-    console.log("ব্যানার ফটো সফলভাবে তৈরি হয়েছে ✅");
+    console.log("ব্যানার ফটো সফলভাবে তৈরি হয়েছে ✅");
     return outputPath;
   } catch (error) {
     console.error("ইমেজ তৈরিতে সমস্যা:", error.message || error);
@@ -486,7 +486,7 @@ function formatMessage(job) {
   ].join("\n");
 }
 
-// ---------- Telegram API ----------
+// ---------- Telegram API (মূল বট) ----------
 
 async function sendTelegramPhoto(imagePath, caption) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -530,6 +530,35 @@ async function sendTelegramMessage(text) {
   }
 }
 
+// ---------- Aggregator বটে পাঠানো (নতুন — Facebook automation-এর জন্য) ----------
+// এই ফাংশন fail করলেও মূল টেলিগ্রাম পোস্টে কোনো প্রভাব পড়ে না,
+// কারণ এটা সম্পূর্ণ try/catch এ সুরক্ষিত এবং main() এ শুধু "await" করা হয়,
+// এরর থ্রো করা হয় না।
+
+async function sendAggregatorPhoto(imagePath, caption) {
+  const token = process.env.AGGREGATOR_BOT_TOKEN;
+  const chatId = process.env.AGGREGATOR_CHAT_ID;
+  if (!token || !chatId) return; // secret সেট করা না থাকলে চুপচাপ স্কিপ
+
+  const url = `https://api.telegram.org/bot${token}/sendPhoto`;
+
+  try {
+    const formData = new FormData();
+    formData.append("chat_id", chatId);
+    formData.append("photo", fs.createReadStream(imagePath));
+    formData.append("caption", caption);
+    formData.append("parse_mode", "Markdown");
+
+    await axios.post(url, formData, { headers: formData.getHeaders() });
+    console.log("Aggregator বটে ছবি পাঠানো হলো ✅");
+  } catch (e) {
+    console.error(
+      "Aggregator বটে পাঠাতে সমস্যা (মূল কাজে প্রভাব পড়েনি):",
+      e.response?.data || e.message
+    );
+  }
+}
+
 // ---------- মেইন লুপ ----------
 
 async function main() {
@@ -546,7 +575,7 @@ async function main() {
     return;
   }
 
-  console.log(`${newJobs.length}টি নতুন বিজ্ঞপ্তি পাওয়া গেছে, প্রসেস করা হচ্ছে...`);
+  console.log(`${newJobs.length}টি নতুন বিজ্ঞপ্তি পাওয়া গেছে, প্রসেস করা হচ্ছে...`);
 
   for (const job of newJobs) {
     const messageText = formatMessage(job);
@@ -556,6 +585,7 @@ async function main() {
 
     if (imagePath && fs.existsSync(imagePath)) {
       sentSuccessfully = await sendTelegramPhoto(imagePath, messageText);
+      await sendAggregatorPhoto(imagePath, messageText); // নতুন লাইন — একই ছবি aggregator বটেও পাঠানো হচ্ছে
       try {
         fs.unlinkSync(imagePath);
       } catch (err) {}
